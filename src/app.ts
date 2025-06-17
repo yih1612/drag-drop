@@ -1,3 +1,21 @@
+// autoBind decorator
+function autoBind(
+  _: any, // target
+  _2: string, // methodName
+  descriptor: PropertyDescriptor
+) {
+  const originalMethod = descriptor.value;
+  const adjDescriptor: PropertyDescriptor = {
+    configurable: true,
+    get() {
+      const boundFn = originalMethod.bind(this);
+      return boundFn;
+    },
+  };
+  return adjDescriptor;
+}
+
+// ProjectInput Class
 class ProjectInput {
   // tsconfig.js의 lib의 'dom'이 있기 때문에 html 요소 타입들을 사용할 수 있다.
   templateElement: HTMLTemplateElement;
@@ -30,13 +48,16 @@ class ProjectInput {
     this.attach();
   }
 
+  // decorator를 쓸 경우에 tsconfig.json에서 아래 부분 주석 해제해야 한다.
+  // "experimentalDecorators": true
+  @autoBind
   private submitHandler(e: Event) {
     e.preventDefault();
     console.log(this.titleInputElement.value);
   }
 
   private configure() {
-    this.element.addEventListener("submit", this.submitHandler.bind(this));
+    this.element.addEventListener("submit", this.submitHandler);
   }
 
   private attach() {
