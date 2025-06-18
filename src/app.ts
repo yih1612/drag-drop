@@ -42,10 +42,34 @@ class ProjectInput {
     this.element.id = "user-input";
     this.titleInputElement = this.element.querySelector("#title")!;
     this.descriptionInputElement = this.element.querySelector("#description")!;
-    this.peopleInputElement = this.element.querySelector("#number")!;
+    this.peopleInputElement = this.element.querySelector("#people")!;
 
     this.configure();
     this.attach();
+  }
+
+  private gatherUserInput(): [string, string, number] | void {
+    const enteredTitle = this.titleInputElement.value;
+    const enteredDescription = this.descriptionInputElement.value;
+    const enteredPeople = this.peopleInputElement.value;
+
+    // 지금은 간단하게. 확장 가능 방법 다음에.
+    if (
+      enteredTitle.trim().length === 0 ||
+      enteredDescription.trim().length === 0 ||
+      enteredPeople.trim().length === 0
+    ) {
+      alert("Invalid input, plz try again");
+      return;
+    } else {
+      return [enteredTitle, enteredDescription, +enteredPeople];
+    }
+  }
+
+  private clearInputs() {
+    this.titleInputElement.value = "";
+    this.descriptionInputElement.value = "";
+    this.peopleInputElement.value = "";
   }
 
   // decorator를 쓸 경우에 tsconfig.json에서 아래 부분 주석 해제해야 한다.
@@ -53,7 +77,13 @@ class ProjectInput {
   @autoBind
   private submitHandler(e: Event) {
     e.preventDefault();
-    console.log(this.titleInputElement.value);
+    const userInput = this.gatherUserInput();
+
+    if (Array.isArray(userInput)) {
+      const [title, desc, people] = userInput;
+      console.log(title, desc, people);
+      this.clearInputs();
+    }
   }
 
   private configure() {
