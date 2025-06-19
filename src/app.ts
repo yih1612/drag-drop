@@ -122,6 +122,7 @@ class ProjectList {
   element: HTMLElement; // section 태그의 타입
   assingedProjects: Project[];
 
+  // type으로 enum ProjectStatus를 쓸 수 있지만 아래에서 해당 타입에 값을 쓰기 때문에 사용 안 함.
   constructor(private type: "active" | "finished") {
     this.templateElement = document.getElementById(
       "project-list"
@@ -137,7 +138,14 @@ class ProjectList {
     this.element.id = `${this.type}-projects`;
 
     projectState.addListener((projects: Project[]) => {
-      this.assingedProjects = projects;
+      const relevantProject = projects.filter((prj) => {
+        // TODO: this.type = 'active'가 어디서 정해지는거지?
+        if (this.type === "active") {
+          return prj.status === ProjectStatus.Active;
+        }
+        return prj.status === ProjectStatus.Finished;
+      });
+      this.assingedProjects = relevantProject;
       this.renderProjects();
     });
 
@@ -149,6 +157,7 @@ class ProjectList {
     const listEl = document.getElementById(
       `${this.type}-projects-list`
     ) as HTMLUListElement;
+    listEl.innerHTML = "";
     for (const prjItem of this.assingedProjects) {
       const listItem = document.createElement("li");
       listItem.textContent = prjItem.title;
