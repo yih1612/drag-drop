@@ -15,14 +15,23 @@ class Project {
 }
 
 // Project State Management
-type Listener = (item: Project[]) => void;
+type Listener<T> = (item: T[]) => void;
 
-class ProjectState {
-  private listeners: any[] = [];
+class State<T> {
+  protected listeners: Listener<T>[] = [];
+
+  addListener(listenerFn: Listener<T>) {
+    this.listeners.push(listenerFn);
+  }
+}
+
+class ProjectState extends State<Project> {
   private projects: Project[] = [];
   private static instance: ProjectState;
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
 
   static getInstance() {
     if (this.instance) {
@@ -30,10 +39,6 @@ class ProjectState {
     }
     this.instance = new ProjectState();
     return this.instance;
-  }
-
-  addListener(listenerFn: Listener) {
-    this.listeners.push(listenerFn);
   }
 
   addProject(title: string, description: string, numOfPeople: number) {
@@ -115,28 +120,68 @@ function autoBind(
   return adjDescriptor;
 }
 
-// ProjectList Class
-class ProjectList {
+// Component Base Class
+// 직접 인스턴스화를 하지 않게끔 abstract.
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+  // tsconfig.js의 lib의 'dom'이 있기 때문에 html 요소 타입들을 사용할 수 있다.
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLElement; // section 태그의 타입
-  assingedProjects: Project[];
+  hostElement: T;
+  element: U;
 
-  // type으로 enum ProjectStatus를 쓸 수 있지만 아래에서 해당 타입에 값을 쓰기 때문에 사용 안 함.
-  constructor(private type: "active" | "finished") {
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    insertAtStart: boolean,
+    newElementId?: string
+  ) {
     this.templateElement = document.getElementById(
-      "project-list"
+      templateId
     )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app")! as HTMLDivElement;
-    this.assingedProjects = [];
+    this.hostElement = document.getElementById(hostElementId)! as T;
 
+    // importNode(1, 2)
+    // 1. template 태그 안에 있는 html 코드에 대한 참조 제공.
+    // 2. 노드의 자식들을 포함해서 가져온다.(깊은 복사)
     const importedNode = document.importNode(
       this.templateElement.content,
       true
     );
-    this.element = importedNode.firstElementChild as HTMLElement;
-    this.element.id = `${this.type}-projects`;
+    this.element = importedNode.firstElementChild as U;
+    if (newElementId) {
+      this.element.id = newElementId;
+    }
 
+    this.attach(insertAtStart);
+  }
+
+  // insertAdjacentElement(1, 2): html 요소를 삽입할 때 사용.
+  // 1: 삽입할 곳.
+  // 2: 삽입할 요소.
+  private attach(insertAtBeginning: boolean) {
+    this.hostElement.insertAdjacentElement(
+      insertAtBeginning ? "afterbegin" : "beforeend",
+      this.element
+    );
+  }
+
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
+
+// ProjectList Class
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assingedProjects: Project[];
+
+  // type으로 enum ProjectStatus를 쓸 수 있지만 아래에서 해당 타입에 값을 쓰기 때문에 사용 안 함.
+  constructor(private type: "active" | "finished") {
+    super("project-list", "app", false, `${type}-projects`);
+    this.assingedProjects = [];
+
+    this.configure();
+    this.renderContent();
+  }
+
+  configure() {
     projectState.addListener((projects: Project[]) => {
       const relevantProject = projects.filter((prj) => {
         // TODO: this.type = 'active'가 어디서 정해지는거지?
@@ -148,9 +193,13 @@ class ProjectList {
       this.assingedProjects = relevantProject;
       this.renderProjects();
     });
+  }
 
-    this.attach();
-    this.renderContent();
+  renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector("ul")!.id = listId;
+    this.element.querySelector("h2")!.textContent =
+      this.type.toUpperCase() + " PROJECTS";
   }
 
   private renderProjects() {
@@ -164,51 +213,31 @@ class ProjectList {
       listEl.appendChild(listItem);
     }
   }
-
-  private renderContent() {
-    const listId = `${this.type}-projects-list`;
-    this.element.querySelector("ul")!.id = listId;
-    this.element.querySelector("h2")!.textContent =
-      this.type.toUpperCase() + " PROJECTS";
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement("beforeend", this.element);
-  }
 }
 
 // ProjectInput Class
-class ProjectInput {
-  // tsconfig.js의 lib의 'dom'이 있기 때문에 html 요소 타입들을 사용할 수 있다.
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLFormElement;
+hostElement: HTMLDivElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   peopleInputElement: HTMLInputElement;
 
   constructor() {
-    this.templateElement = document.getElementById(
-      "project-input"
-    )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app")! as HTMLDivElement;
+    super("project-input", "app", true, "user-input");
 
-    // importNode(1, 2)
-    // 1. template 태그 안에 있는 html 코드에 대한 참조 제공.
-    // 2. 노드의 자식들을 포함해서 가져온다.(깊은 복사)
-    const importedNode = document.importNode(
-      this.templateElement.content,
-      true
-    );
-    this.element = importedNode.firstElementChild as HTMLFormElement;
-    this.element.id = "user-input";
     this.titleInputElement = this.element.querySelector("#title")!;
     this.descriptionInputElement = this.element.querySelector("#description")!;
     this.peopleInputElement = this.element.querySelector("#people")!;
 
     this.configure();
-    this.attach();
   }
+
+  // public은 private보다 앞에 둬야한다.
+  configure() {
+    this.element.addEventListener("submit", this.submitHandler);
+  }
+
+  renderContent() {}
 
   private gatherUserInput(): [string, string, number] | void {
     const enteredTitle = this.titleInputElement.value;
@@ -262,17 +291,6 @@ class ProjectInput {
       projectState.addProject(title, desc, people);
       this.clearInputs();
     }
-  }
-
-  private configure() {
-    this.element.addEventListener("submit", this.submitHandler);
-  }
-
-  private attach() {
-    // insertAdjacentElement(1, 2): html 요소를 삽입할 때 사용.
-    // 1: 삽입할 곳.
-    // 2: 삽입할 요소.
-    this.hostElement.insertAdjacentElement("afterbegin", this.element);
   }
 }
 
