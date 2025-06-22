@@ -70,6 +70,18 @@ class ProjectState extends State<Project> {
       ProjectStatus.Active
     );
     this.projects.push(newProject);
+    this.updateListeners();
+  }
+
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find((prj) => prj.id === projectId);
+    if (project && project.status !== newStatus) {
+      project.status = newStatus;
+      this.updateListeners();
+    }
+  }
+
+  private updateListeners() {
     for (const listenerFn of this.listeners) {
       // slice를 통해 새로운 배열 전달.
       listenerFn(this.projects.slice());
@@ -238,12 +250,12 @@ class ProjectList
   extends Component<HTMLDivElement, HTMLElement>
   implements DragTarget
 {
-  assingedProjects: Project[];
+  assignedProjects: Project[];
 
   // type으로 enum ProjectStatus를 쓸 수 있지만 아래에서 해당 타입에 값을 쓰기 때문에 사용 안 함.
   constructor(private type: "active" | "finished") {
     super("project-list", "app", false, `${type}-projects`);
-    this.assingedProjects = [];
+    this.assignedProjects = [];
 
     this.configure();
     this.renderContent();
@@ -258,8 +270,13 @@ class ProjectList
     }
   }
 
+  @autoBind
   dropHandler(event: DragEvent) {
-    console.log(event.dataTransfer!.getData("text/plain"));
+    const prjId = event.dataTransfer!.getData("text/plain");
+    projectState.moveProject(
+      prjId,
+      this.type === "active" ? ProjectStatus.Active : ProjectStatus.Finished
+    );
   }
 
   @autoBind
@@ -281,7 +298,7 @@ class ProjectList
         }
         return prj.status === ProjectStatus.Finished;
       });
-      this.assingedProjects = relevantProject;
+      this.assignedProjects = relevantProject;
       this.renderProjects();
     });
   }
@@ -298,7 +315,7 @@ class ProjectList
       `${this.type}-projects-list`
     ) as HTMLUListElement;
     listEl.innerHTML = "";
-    for (const prjItem of this.assingedProjects) {
+    for (const prjItem of this.assignedProjects) {
       new ProjectItem(this.element.querySelector("ul")!.id, prjItem);
     }
   }
