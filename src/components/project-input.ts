@@ -1,7 +1,9 @@
-import { autoBind } from "../decorators/autobind";
+import { autoBind as AutoBind } from "../decorators/autobind";
 import { projectState } from "../state/project-state";
-import { Validatable, validate } from "../util/validation";
-import { Component } from "./base-component";
+import * as Validation from "../util/validation";
+// export default를 한경우에 이름을 마음대로 써도 됨.
+// import Cpt from "./base-component";
+import Component from "./base-component";
 
 // ProjectInput Class
 export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
@@ -31,16 +33,16 @@ export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
     const enteredDescription = this.descriptionInputElement.value;
     const enteredPeople = this.peopleInputElement.value;
 
-    const titleValidatable: Validatable = {
+    const titleValidatable: Validation.Validatable = {
       value: enteredTitle,
       required: true,
     };
-    const descriptionValidatable: Validatable = {
+    const descriptionValidatable: Validation.Validatable = {
       value: enteredDescription,
       required: true,
       minLength: 5,
     };
-    const peopleValidatable: Validatable = {
+    const peopleValidatable: Validation.Validatable = {
       value: +enteredPeople,
       required: true,
       min: 1,
@@ -49,9 +51,9 @@ export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 
     if (
       // 하나라도 false값이 나온다면
-      !validate(titleValidatable) ||
-      !validate(descriptionValidatable) ||
-      !validate(peopleValidatable)
+      !Validation.validate(titleValidatable) ||
+      !Validation.validate(descriptionValidatable) ||
+      !Validation.validate(peopleValidatable)
     ) {
       alert("Invalid input, plz try again");
       return;
@@ -68,7 +70,7 @@ export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 
   // decorator를 쓸 경우에 tsconfig.json에서 아래 부분 주석 해제해야 한다.
   // "experimentalDecorators": true
-  @autoBind
+  @AutoBind
   private submitHandler(e: Event) {
     e.preventDefault();
     const userInput = this.gatherUserInput();
