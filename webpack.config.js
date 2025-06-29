@@ -2,6 +2,7 @@ const path = require("path");
 
 // NodeJS 익스포트 구문.
 module.exports = {
+  mode: "development",
   entry: "./src/app.ts",
   output: {
     filename: "bundle.js",
@@ -9,6 +10,7 @@ module.exports = {
     // 절대 경로로 써줘야 함.
     // 특정 경로에 절대 경로 구축.
     path: path.resolve(__dirname, "dist"),
+    publicPath: "/dist/",
   },
   // 웹팩에게 추출해야 하는 소스맵이 생성될 것이라고 알려주고,
   // 웹팩이 제대로 번들을 구현하도록 구성하여 번들링이 완료될 때, 탁월한 개발 경험을 제공.
@@ -27,5 +29,12 @@ module.exports = {
   // 찾아낸 임포트에 어떤 파일 확장자를 추가할지 전달.
   resolve: {
     extensions: [".ts", ".js"],
+  },
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname),
+      },
+    ],
   },
 };
