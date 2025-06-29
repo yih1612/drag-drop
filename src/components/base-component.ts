@@ -1,6 +1,9 @@
 // Component Base Class
 // 직접 인스턴스화를 하지 않게끔 abstract.
-export abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+export default abstract class Component<
+  T extends HTMLElement,
+  U extends HTMLElement
+> {
   // tsconfig.js의 lib의 'dom'이 있기 때문에 html 요소 타입들을 사용할 수 있다.
   templateElement: HTMLTemplateElement;
   hostElement: T;
